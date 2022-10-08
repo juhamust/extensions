@@ -1,9 +1,10 @@
-import { Detail } from "@raycast/api";
+import { renderToString } from "react-dom/server";
+import { Action, ActionPanel, Detail } from "@raycast/api";
 import ChordKeyboard, { ChordKeyboardOptions } from "../components/ChordKeyboard";
 import { urlDecodeKey, urlEncodeChord, trimLines, getSvgBase64 } from "../libs/helper";
 import { Chord } from "../libs/chord";
 import constants from "../libs/constants";
-import { renderToString } from "react-dom/server";
+import { play } from "../libs/audio";
 
 export function getChordImageUrl({
   chord,
@@ -56,8 +57,21 @@ export default function ChordDetails({ chord }: { chord: Chord }) {
   )}/${urlEncodeChord(chord.fullName)}`;
   const contentMd = getInversionsContent({ chord, options });
 
+  const actions = (
+    <ActionPanel title="play me">
+      <Action
+        title="Play me"
+        onAction={() => {
+          console.log("OPEN WITH");
+          play(chord.key, 0);
+        }}
+      />
+    </ActionPanel>
+  );
+
   return (
     <Detail
+      actions={actions}
       markdown={contentMd}
       navigationTitle={chord.fullName}
       metadata={
@@ -75,7 +89,7 @@ export default function ChordDetails({ chord }: { chord: Chord }) {
             ))}
           </Detail.Metadata.TagList>
           <Detail.Metadata.Separator />
-          <Detail.Metadata.Link title="Links" target={pianoChordIoUrl} text="Chordpiano.io" />
+          <Detail.Metadata.Link title="Links" target={pianoChordIoUrl} text="Pianochord.io" />
         </Detail.Metadata>
       }
     />
