@@ -1,7 +1,9 @@
+import { renderToString } from "react-dom/server";
 import { Chord } from "../libs/chord";
-import { getHighlightTable } from "../libs/helper";
-import { bw, bwMap } from "../libs/key";
 import constants from "../libs/constants";
+import { getHighlightTable, getSvgBase64 } from "../libs/helper";
+import { bw, bwMap } from "../libs/key";
+import { Scale } from "../libs/scale";
 
 let blackOccurIndex = [1, 3, 6, 8, 10];
 blackOccurIndex = [
@@ -25,7 +27,7 @@ function blackIfActive(i: number, highlightTable: boolean[]) {
   return highlightTable[blackOccurIndex[i]];
 }
 
-export type ChordKeyboardOptions = {
+export type KeyboardOptions = {
   highlightColor: string;
   whiteWidth: number;
   whiteHeight: number;
@@ -33,7 +35,7 @@ export type ChordKeyboardOptions = {
   blackHeight: number;
 };
 
-const defaultOptions: ChordKeyboardOptions = {
+const defaultOptions: KeyboardOptions = {
   highlightColor: constants.colors.red,
   whiteWidth: constants.keyboard.whiteWidth,
   whiteHeight: constants.keyboard.whiteHeight,
@@ -41,18 +43,18 @@ const defaultOptions: ChordKeyboardOptions = {
   blackHeight: constants.keyboard.blackHeight,
 };
 
-export default function KeyboardChord({
-  chord,
+export default function Keyboard({
+  input,
   options = defaultOptions,
 }: {
-  chord: Chord;
-  options?: ChordKeyboardOptions;
+  input: Scale | Chord;
+  options?: KeyboardOptions;
 }) {
-  const highlightTable = getHighlightTable(chord);
   const { whiteWidth, whiteHeight, blackWidth, blackHeight, highlightColor } = {
     ...defaultOptions,
     ...options,
   };
+  const highlightTable = getHighlightTable(input);
 
   return (
     <svg width={whiteWidth * 7 * 3} height={whiteHeight}>
@@ -87,4 +89,14 @@ export default function KeyboardChord({
       ))}
     </svg>
   );
+}
+
+export function getKeyboardImageUrl({
+  input,
+  options,
+}: {
+  input: Chord | Scale;
+  options?: KeyboardOptions;
+}) {
+  return getSvgBase64(renderToString(<Keyboard input={input} options={options} />));
 }

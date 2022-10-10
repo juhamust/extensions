@@ -1,18 +1,11 @@
-import { Detail } from "@raycast/api";
-import ChordKeyboard, { ChordKeyboardOptions } from "../components/ChordKeyboard";
-import { urlDecodeKey, urlEncodeChord, trimLines, getSvgBase64 } from "../libs/helper";
+import { Action, ActionPanel, Detail, Icon } from "@raycast/api";
 import { Chord } from "../libs/chord";
 import constants from "../libs/constants";
-import { renderToString } from "react-dom/server";
+import { getChordKeyListing, trimLines, urlDecodeKey, urlEncodeChord } from "../libs/helper";
+import { getKeyboardImageUrl, KeyboardOptions } from "./Keyboard";
 
-export function getChordImageUrl({
-  chord,
-  options,
-}: {
-  chord: Chord;
-  options?: ChordKeyboardOptions;
-}) {
-  return getSvgBase64(renderToString(<ChordKeyboard chord={chord} options={options} />));
+export function getNoteListing(chord: Chord) {
+  return getChordKeyListing(chord).join(" - ");
 }
 
 export function getInversionsContent({
@@ -20,14 +13,14 @@ export function getInversionsContent({
   options,
 }: {
   chord: Chord;
-  options?: ChordKeyboardOptions;
+  options?: KeyboardOptions;
 }) {
   const inversionsMd = trimLines(
     chord.inversions.map((inversion, _index) => {
       const inversionName = inversion.fullName.length > 0 ? inversion.fullName : inversion.alias[0];
       return `
       ### Inversion: ${inversionName}
-      ![](${getChordImageUrl({ chord: inversion, options })})
+      ![](${getKeyboardImageUrl({ input: inversion, options })})
       `;
     }),
   ).join("\n");
@@ -35,14 +28,14 @@ export function getInversionsContent({
   return trimLines(`
   # ${chord.fullName}
 
-  ![](${getChordImageUrl({ chord, options })})
+  ![](${getKeyboardImageUrl({ input: chord, options })})
 
   ${inversionsMd}
   `).join("\n");
 }
 
 export default function ChordDetails({ chord }: { chord: Chord }) {
-  const options: ChordKeyboardOptions = {
+  const options: KeyboardOptions = {
     highlightColor: "#ff6363",
     whiteWidth: 18,
     whiteHeight: 80,
@@ -56,10 +49,31 @@ export default function ChordDetails({ chord }: { chord: Chord }) {
   )}/${urlEncodeChord(chord.fullName)}`;
   const contentMd = getInversionsContent({ chord, options });
 
+  // Generate actions for chord and chord inversions
+  const actions = [
+    <Action.CopyToClipboard
+      key={0}
+      title={`Copy Chord Notes: ${chord.name}`}
+      content={getNoteListing(chord)}
+      icon={Icon.Clipboard}
+    />,
+  ];
+  chord.inversions.forEach((inversionChord, index) => {
+    actions.push(
+      <Action.CopyToClipboard
+        key={index + 1}
+        title={`Copy Chord Notes: ${inversionChord.name}`}
+        content={getNoteListing(inversionChord)}
+        icon={Icon.Clipboard}
+      />,
+    );
+  });
+
   return (
     <Detail
       markdown={contentMd}
       navigationTitle={chord.fullName}
+      actions={<ActionPanel title="Chord">{actions}</ActionPanel>}
       metadata={
         <Detail.Metadata>
           <Detail.Metadata.Label title="Topic" text={chord.tonic} />
@@ -75,7 +89,7 @@ export default function ChordDetails({ chord }: { chord: Chord }) {
             ))}
           </Detail.Metadata.TagList>
           <Detail.Metadata.Separator />
-          <Detail.Metadata.Link title="Links" target={pianoChordIoUrl} text="Chordpiano.io" />
+          <Detail.Metadata.Link title="Links" target={pianoChordIoUrl} text="Pianochord.io" />
         </Detail.Metadata>
       }
     />

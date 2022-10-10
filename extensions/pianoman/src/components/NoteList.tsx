@@ -1,10 +1,11 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
-import { chords, getNote } from "../libs/db";
+import { chordDatabase, getNote } from "../libs/db";
+import { Key } from "../libs/key";
 import { Note } from "../libs/note";
 import ChordGrid from "./ChordGrid";
 
 type KeyListProps = {
-  noteNames: string[];
+  noteNames: Key[];
   isLoading?: boolean;
 };
 
@@ -12,13 +13,15 @@ export default function NoteList({ noteNames, isLoading = false }: KeyListProps)
   return (
     <List isLoading={isLoading}>
       {noteNames
-        .filter((noteName, _index) => {
-          // FIXME: Some notes are missing
-          return Boolean(getNote(noteName));
-        })
+        .filter((noteName) => Boolean(getNote(noteName)))
         .map((noteName, index) => {
-          const singleKeyChords = chords[noteName];
+          const singleKeyChords = chordDatabase[noteName];
           const rootNote = getNote(noteName) as Note;
+
+          if (!rootNote) {
+            throw new Error(`Failed to find ${noteName} -> ${rootNote}`);
+          }
+
           const target = <ChordGrid rootNote={rootNote} chords={singleKeyChords} />;
           return (
             <List.Item

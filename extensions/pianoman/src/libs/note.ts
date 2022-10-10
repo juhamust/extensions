@@ -1,25 +1,31 @@
-import { bwMap, chromaticName, Key, OctaveKeyCount } from "./key";
+import { bwMap, chromaticName, Key, keys, OctaveKeyCount } from "./key";
+
+export type Octave = 2 | 3 | 4 | 5 | 6;
 
 class Note {
   key: Key;
-  octave: number;
+  octave: Octave;
 
-  constructor(key: Key, octave: number) {
+  constructor(key: Key, octave: Octave) {
     if (typeof key === "undefined") throw "undefined key";
     this.key = key;
     this.octave = octave;
   }
 
   play() {
-    console.log("Not implemented");
+    throw new Error("Not implemented");
   }
 
   getChromaticName() {
-    return chromaticName[this.key];
+    return chromaticName[keys.get(this.key)];
+  }
+
+  getValue() {
+    return keys.get(this.key);
   }
 
   toString() {
-    return chromaticName[this.key] + this.octave;
+    return chromaticName[keys.get(this.key)] + this.octave;
   }
 
   valueOf() {
@@ -27,7 +33,7 @@ class Note {
   }
 
   get bw() {
-    return bwMap[this.key];
+    return bwMap[keys.get(this.key)!];
   }
 }
 

@@ -15,12 +15,30 @@
     {
       "name": "pianoman-chord",
       "title": "Search Piano Chord",
-      "description": "Discover piano chord like C#",
+      "description": "Discover piano chord like C# major",
       "mode": "view",
       "arguments": [
         {
-          "name": "rootNote",
-          "placeholder": "note",
+          "name": "keywords",
+          "placeholder": "keywords",
+          "type": "text"
+        }
+      ],
+      "keywords": [
+        "music",
+        "piano",
+        "chord"
+      ]
+    },
+    {
+      "name": "pianoman-scale",
+      "title": "Search Piano Scale",
+      "description": "Discover piano scale like C major: C-D-E-F-G-A-B",
+      "mode": "view",
+      "arguments": [
+        {
+          "name": "keywords",
+          "placeholder": "keywords",
           "type": "text"
         }
       ],
@@ -34,7 +52,7 @@
   "dependencies": {
     "@raycast/api": "^1.39.3",
     "@raycast/utils": "^1.4.8",
-    "got": "^12.5.0",
+    "fuse.js": "^6.6.2",
     "js-base64": "^3.7.2",
     "react-dom": "^17.0.2"
   },
@@ -54,6 +72,7 @@
     "build": "ray build -e dist",
     "dev": "ray develop",
     "test": "jest src",
+    "watch": "jest --watch src",
     "fix-lint": "ray lint --fix",
     "lint": "ray lint",
     "publish": "ray publish"

@@ -25,3 +25,20 @@
   </p>
   <p>This extension is inspired and partially built on top of <a href="https://pianochord.io/">pianochords.io</a></p>
 </div>
+
+## Links
+
+- https://www.scales-chords.com/scalenav.php
+- https://www.scales-chords.com/shscalesbytype.php?sname=major
+- https://www.scales-chords.com/scaleinfo.php?skey=C&sname=major
+
+## Structure
+
+```
+C D E F G A B
+Interval structure of this scale:
+W W h W W W h
+(W: Whole tone, h: half tone)
+Scale structure:
+1 2 3 4 5 6 7
+```

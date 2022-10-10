@@ -1,7 +1,9 @@
 import { encode } from "js-base64";
 import { Chord } from "./chord";
-import { chords } from "./db";
-import { Key } from "./key";
+import { chordDatabase, getNote } from "./db";
+import { Key, keys, Value } from "./key";
+import { Note } from "./note";
+import { Scale } from "./scale";
 
 export function getSvgBase64(svg: string): string {
   return `data:image/svg+xml;base64,${encode(svg)}`;
@@ -19,11 +21,17 @@ export function trimLines(content: string | string[]) {
   return (
     lines
       // Drop the first and last line if only carriage return
-      .filter((line, index) =>
-        (index === firstIndex || index === lastIndex) && line.trim() === "" ? false : true,
+      .filter(
+        (line, index) => !((index === firstIndex || index === lastIndex) && line.trim() === ""),
       )
       .map((line) => line.trim())
   );
+}
+
+export function sumValues(...values: Value[]) {
+  return (values as number[]).reduce((total: number, value: number) => {
+    return (total += value);
+  }, 0) as Value;
 }
 
 /**
@@ -35,20 +43,45 @@ export function findNoteByName(rawValue?: string) {
   }
 
   const noteValue = ["#", "b"].includes(rawValue.substring(1, 2))
-    ? rawValue.substring(0, 2)
-    : rawValue.substring(0, 1).toUpperCase();
+    ? (rawValue.substring(0, 2) as Key)
+    : (rawValue.substring(0, 1).toUpperCase() as Key);
 
-  // Check the letter matches with value values
-  if (!Object.keys(Key).includes(noteValue)) {
+  // Check the letter matches with value
+  if (!keys.has(noteValue)) {
     return undefined;
   }
 
   return noteValue;
 }
 
-export function getHighlightTable(chord: Chord) {
+export function getHighlightTable(input: Chord | Scale) {
+  if (input instanceof Chord) {
+    return getHighlightTableFromChord(input);
+  }
+  return getHighlightTableFromScale(input);
+}
+
+export function getHighlightTableFromScale(scale: Scale) {
+  if (scale.notes.length === 0) {
+    throw new Error("Empty scale");
+  }
+
   const highlightTable: boolean[] = Array(12 * 3).fill(false);
-  const startIndex = chord.key;
+  const rootNote = scale.notes[0];
+  const rootNoteOctave = rootNote.octave;
+
+  scale.notes.forEach((note) => {
+    const octaveValueAdd = 12 * (note.octave - rootNoteOctave);
+    const keyIndex = note.getValue() + octaveValueAdd;
+    highlightTable[keyIndex] = true;
+  });
+
+  return highlightTable;
+}
+
+export function getHighlightTableFromChord(chord: Chord) {
+  const highlightTable: boolean[] = Array(12 * 3).fill(false);
+  const startIndex = keys.get(chord.key);
   highlightTable[startIndex] = true;
   chord.intervals.reduce((previousValue, currentValue) => {
     const accumulate = previousValue + currentValue;
@@ -56,6 +89,27 @@ export function getHighlightTable(chord: Chord) {
     return accumulate;
   }, startIndex);
   return highlightTable;
+}
+
+export function getScaleKeyListing(scale: Scale): Key[] {
+  return scale.notes.map((note) => note.key);
+}
+
+export function getChordKeyListing(chord: Chord): Key[] {
+  const rootNote = getNote(chord.key) as Note;
+  const rootNoteValue = rootNote.getValue();
+  const chordKeys: Key[] = [];
+
+  chord.intervals.reduce((value: number, interval: number) => {
+    let keyValue = value + interval;
+    if (keyValue >= 12) {
+      keyValue -= 12;
+    }
+    chordKeys.push(keys.getKeyFromValue(keyValue as Value));
+    return keyValue;
+  }, rootNoteValue);
+
+  return chordKeys;
 }
 
 export function chordAlignMid(highlightTable: boolean[]): boolean[] {
@@ -70,7 +124,7 @@ export function chordAlignMid(highlightTable: boolean[]): boolean[] {
 }
 
 export function findChordByName(key: string, chordName: string) {
-  return chords[key].find((c) => {
+  return chordDatabase[key].find((c) => {
     if (c.name === chordName) return true;
     return false;
   });
@@ -78,42 +132,15 @@ export function findChordByName(key: string, chordName: string) {
 
 // C-flat.. -> Cb
 export function urlDecodeKey(key: string | undefined): string | undefined {
-  if (key) {
-    return key.replace("-flat", "b").replace("-sharp", "#");
-  } else {
-    return undefined;
-  }
+  return key?.replace("-flat", "b").replace("-sharp", "#");
 }
+
 // C# -> C-sharp
-export function urlEncodeKey(key: string): string {
-  return key.replace("#", "-sharp").replace("b", "-flat");
+export function urlEncodeKey(key: string | undefined): string | undefined {
+  return key?.replace("#", "-sharp").replace("b", "-flat");
 }
 
 // #->sharp  /->_  ' '->-
 export function urlEncodeChord(chordName: string): string {
   return chordName.replace(/#/g, "sharp").replace(/\//g, "_").replace(/ /g, "-");
-}
-
-export function urlDecodeChord(chordName: string | undefined): string | undefined {
-  if (chordName) {
-    return chordName.replace(/sharp/g, "#").replace(/_/g, "/").replace(/-/g, " ");
-  } else {
-    return undefined;
-  }
-}
-
-export function chordFilterByKeyword(kw: string) {
-  return (chord: Chord) => {
-    kw = kw.toLowerCase().replace(" ", "");
-    const fullName = chord.fullName.toLowerCase().replace(" ", "");
-    const alias = chord.alias.map((str: string) => str.toLowerCase().replace(" ", ""));
-    const allNames = [fullName, ...alias];
-    return allNames.some((name) => name.indexOf(kw) !== -1);
-  };
-}
-
-export const delay = (t: number) => new Promise((resolve) => setTimeout(resolve, t));
-
-export function sum(arr: number[]) {
-  return arr.reduce((a, b) => a + b, 0);
 }

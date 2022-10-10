@@ -1,9 +1,20 @@
 import { Detail } from "@raycast/api";
 
 type ChordErrorProps = {
-  msg?: string;
+  details?: any;
 };
 
-export function ChordError(_props: ChordErrorProps) {
-  return <Detail markdown="Failed to find piano chord" />;
+export function ChordError({ details }: ChordErrorProps) {
+  const content = `
+  # Failed to find piano chord
+
+  Error occured.
+
+  \`\`\`
+  ${JSON.stringify(details)}
+  \`\`\`
+  
+  `;
+
+  return <Detail markdown={content} />;
 }

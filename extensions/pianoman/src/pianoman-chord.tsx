@@ -1,51 +1,28 @@
-import { useMemo } from "react";
-import { chords, getNote } from "./libs/db";
-import { findNoteByName as findRootNoteByName } from "./libs/helper";
+import { useMemo, useState } from "react";
+import ChordDetails from "./components/ChordDetails";
 import NoteList from "./components/NoteList";
-import { keySimpleList } from "./libs/key";
+import { useChordSearch } from "./hooks/fuse";
 import { Chord } from "./libs/chord";
-import ChordGrid from "./components/ChordGrid";
-import { Note } from "./libs/note";
-import { showToast, Toast } from "@raycast/api";
+import { chords } from "./libs/db";
+import { keySimpleList } from "./libs/key";
 
-export default function Command(props: { arguments?: { rootNote: string } }) {
-  const rawValue = props?.arguments?.rootNote;
+export default function Command(props: { arguments?: { keywords: string } }) {
+  const rawValue = props?.arguments?.keywords;
+  const search = useChordSearch(chords);
+  const [filteredChords, setFilteredChords] = useState<Chord[]>([]);
 
-  const rootNote = useMemo<Note | undefined>(() => {
-    const rootNoteName = findRootNoteByName(rawValue);
-
-    if (rootNoteName) {
-      return getNote(rootNoteName);
-    }
+  useMemo<void>(() => {
     if (rawValue) {
-      showToast({
-        style: Toast.Style.Failure,
-        title: "No such note or chord",
-        message: "Showing note listing instead",
-      });
+      const filteredChords = search(rawValue?.split(" "));
+      setFilteredChords(filteredChords);
     }
   }, [rawValue]);
 
-  const singleKeyChords = useMemo<Chord[]>(() => {
-    if (!rootNote) {
-      return [];
-    }
-
-    // Find chords for single key/note
-    const chordDataItems = chords[rootNote.getChromaticName()] as Chord[] | undefined;
-    if (chordDataItems && chordDataItems?.length > 0) {
-      return chordDataItems;
-    }
-
-    console.error("Failed to find chords by", rootNote.toString());
-    return [];
-  }, [rootNote]);
-
-  // Show chords from selected rootNote
-  if (rootNote && singleKeyChords.length > 0) {
-    return <ChordGrid rootNote={rootNote} chords={singleKeyChords} />;
+  // Show exact match directly
+  if (filteredChords.length === 1) {
+    return <ChordDetails chord={filteredChords[0]} />;
   }
 
-  // If rootNote is not selected, show listing
+  // Otherwise show listing
   return <NoteList noteNames={keySimpleList} />;
 }
